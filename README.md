@@ -1,1 +1,0 @@
-# msys2-pypy-test

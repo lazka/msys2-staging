@@ -1,0 +1,109 @@
+diff -Nur src/pypy2-v5.7.1-src/pypy/module/pyexpat/interp_pyexpat.py src_old/pypy2-v5.7.1-src/pypy/module/pyexpat/interp_pyexpat.py
+--- src/pypy2-v5.7.1-src/pypy/module/pyexpat/interp_pyexpat.py	2017-03-30 20:57:53.000000000 +0200
++++ src_old/pypy2-v5.7.1-src/pypy/module/pyexpat/interp_pyexpat.py	2017-05-30 00:33:17.209708800 +0200
+@@ -13,7 +13,7 @@
+ import weakref
+ import py
+ 
+-if sys.platform == "win32":
++if sys.platform == "win32" and 0:
+     libname = 'libexpat'
+     pre_include_bits = ["#define XML_STATIC"]
+ else:
+diff -Nur src/pypy2-v5.7.1-src/rpython/rlib/clibffi.py src_old/pypy2-v5.7.1-src/rpython/rlib/clibffi.py
+--- src/pypy2-v5.7.1-src/rpython/rlib/clibffi.py	2017-03-30 20:57:53.000000000 +0200
++++ src_old/pypy2-v5.7.1-src/rpython/rlib/clibffi.py	2017-05-30 00:08:03.522419600 +0200
+@@ -38,7 +38,7 @@
+ if _WIN32:
+     from rpython.rlib import rwin32
+ 
+-if _WIN32:
++if _WIN32 and 0:
+     separate_module_sources = ['''
+     #include "src/precommondefs.h"
+     #include <stdio.h>
+@@ -63,8 +63,8 @@
+     separate_module_sources = []
+ 
+ 
+-if not _WIN32:
+-    includes = ['ffi.h']
++if not _WIN32 or 1:
++    includes = ['ffi.h', 'windows.h']
+ 
+     if _MAC_OS:
+         pre_include_bits = ['#define MACOSX']
+@@ -71,7 +71,7 @@
+     else:
+         pre_include_bits = []
+ 
+-    libraries = ['ffi']
++    libraries = ['ffi', 'kernel32']
+     link_files = []
+ 
+     eci = ExternalCompilationInfo(
+@@ -79,7 +79,7 @@
+         includes = includes,
+         libraries = libraries,
+         separate_module_sources = separate_module_sources,
+-        include_dirs = platform.include_dirs_for_libffi(),
++        include_dirs = platform.include_dirs_for_libffi() + [cdir],
+         library_dirs = platform.library_dirs_for_libffi(),
+         link_files = link_files,
+         testonly_libraries = ['ffi'],
+diff -Nur src/pypy2-v5.7.1-src/rpython/rlib/rvmprof/src/rvmprof.h src_old/pypy2-v5.7.1-src/rpython/rlib/rvmprof/src/rvmprof.h
+--- src/pypy2-v5.7.1-src/rpython/rlib/rvmprof/src/rvmprof.h	2017-03-30 20:57:53.000000000 +0200
++++ src_old/pypy2-v5.7.1-src/rpython/rlib/rvmprof/src/rvmprof.h	2017-05-30 00:10:11.957445200 +0200
+@@ -1,8 +1,4 @@
+-#ifdef _WIN32
+-typedef long intptr_t;
+-#else
+ # include <stdint.h>
+-#endif
+ 
+ RPY_EXTERN char *vmprof_init(int, double, char *);
+ RPY_EXTERN void vmprof_ignore_signals(int);
+diff -Nur src/pypy2-v5.7.1-src/rpython/rtyper/lltypesystem/ll2ctypes.py src_old/pypy2-v5.7.1-src/rpython/rtyper/lltypesystem/ll2ctypes.py
+--- src/pypy2-v5.7.1-src/rpython/rtyper/lltypesystem/ll2ctypes.py	2017-03-30 20:57:53.000000000 +0200
++++ src_old/pypy2-v5.7.1-src/rpython/rtyper/lltypesystem/ll2ctypes.py	2017-05-30 00:32:54.975437100 +0200
+@@ -1207,6 +1207,8 @@
+     if libraries:
+         not_found = []
+         for libname in libraries:
++            if libname == "expat":
++                libname = "libexpat-1"
+             libpath = None
+             ext = platform.so_ext
+             prefixes = platform.so_prefixes
+diff -Nur src/pypy2-v5.7.1-src/rpython/translator/platform/windows.py src_old/pypy2-v5.7.1-src/rpython/translator/platform/windows.py
+--- src/pypy2-v5.7.1-src/rpython/translator/platform/windows.py	2017-03-30 20:57:53.000000000 +0200
++++ src_old/pypy2-v5.7.1-src/rpython/translator/platform/windows.py	2017-05-29 23:50:22.271841100 +0200
+@@ -559,10 +559,14 @@
+         return ['-shared'] + args
+ 
+     def _include_dirs_for_libffi(self):
+-        return []
++        return self._pkg_config("libffi", "--cflags-only-I",
++                                [],
++                                check_result_dir=True)
+ 
+     def _library_dirs_for_libffi(self):
+-        return []
++        return self._pkg_config("libffi", "--libs-only-L",
++                                [],
++                                check_result_dir=True)
+ 
+     def _handle_error(self, returncode, stdout, stderr, outname):
+         # Mingw tools write compilation errors to stdout
+diff -Nur src/pypy2-v5.7.1-src/rpython/jit/backend/x86/support.py src_old/pypy2-v5.7.1-src/rpython/jit/backend/x86/support.py
+--- src/pypy2-v5.7.1-src/rpython/jit/backend/x86/support.py	2017-05-30 12:31:19.783022600 +0200
++++ src_old/pypy2-v5.7.1-src/rpython/jit/backend/x86/support.py	2017-05-30 12:32:24.947749900 +0200
+@@ -5,7 +5,7 @@
+ 
+ if WORD == 4:
+     extra = ['-DPYPY_X86_CHECK_SSE2']
+-    if sys.platform != 'win32':
++    if sys.platform != 'win32' or 1:
+         extra += ['-msse2', '-mfpmath=sse']
+     else:
+         extra += ['/arch:SSE2']

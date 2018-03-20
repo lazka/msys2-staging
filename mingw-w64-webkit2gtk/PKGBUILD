@@ -1,0 +1,85 @@
+# Maintainer: Christoph Reiter <reiter.christoph@gmail.com>
+
+_realname=webkit2gtk
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.20.0
+pkgrel=1
+pkgdesc="GTK+ Web content engine library (mingw-w64)"
+arch=('any')
+url="https://webkitgtk.org/"
+license=(custom)
+depends=("${MINGW_PACKAGE_PREFIX}-libxslt"
+         "${MINGW_PACKAGE_PREFIX}-enchant"
+         "${MINGW_PACKAGE_PREFIX}-gst-plugins-base"
+         "${MINGW_PACKAGE_PREFIX}-gst-plugins-bad"
+         "${MINGW_PACKAGE_PREFIX}-libsecret"
+         "${MINGW_PACKAGE_PREFIX}-libwebp"
+         "${MINGW_PACKAGE_PREFIX}-harfbuzz"
+         "${MINGW_PACKAGE_PREFIX}-gtk3"
+         "${MINGW_PACKAGE_PREFIX}-libnotify"
+         "${MINGW_PACKAGE_PREFIX}-hyphen")
+makedepends=("gperf"
+             "${MINGW_PACKAGE_PREFIX}-gobject-introspection"
+             "${MINGW_PACKAGE_PREFIX}-gtk-doc"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-python2"
+             "${MINGW_PACKAGE_PREFIX}-ruby"
+             "${MINGW_PACKAGE_PREFIX}-ninja")
+source=(https://webkitgtk.org/releases/webkitgtk-${pkgver}.tar.xz{,.asc}
+        various-fixes.patch)
+sha256sums=('57f640f720bd9a8a7207f3321cf803a15c2f207b4e7b75ff1be17bc1eeb00a3c'
+            'SKIP'
+            'SKIP')
+validpgpkeys=('D7FCF61CF9A2DEAB31D81BD3F3D322D0EC4582C3')
+
+prepare() {
+  cd "${srcdir}/webkitgtk-${pkgver}"
+
+  patch -Np1 -i "${srcdir}"/various-fixes.patch
+}
+
+build() {
+  cd "$srcdir"/webkitgtk-${pkgver}
+  [[ -d "${srcdir}"/build-${CARCH} ]] && rm -rf "${srcdir}"/build-${CARCH}
+  mkdir -p "${srcdir}"/build-${CARCH} && cd "${srcdir}"/build-${CARCH}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+    ${MINGW_PREFIX}/bin/cmake \
+      -G Ninja \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+      -DPORT=GTK \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DENABLE_GTKDOC=OFF \
+      -DENABLE_DRAG_SUPPORT=OFF \
+      -DENABLE_GLES2=OFF \
+      -DENABLE_ICONDATABASE=OFF \
+      -DENABLE_INTROSPECTION=OFF \
+      -DENABLE_JIT=OFF \
+      -DENABLE_OPENGL=OFF \
+      -DENABLE_SAMPLING_PROFILER=OFF \
+      -DENABLE_SPELLCHECK=OFF \
+      -DENABLE_TOUCH_EVENTS=OFF \
+      -DENABLE_VIDEO=OFF \
+      -DENABLE_WEBDRIVER=OFF \
+      -DENABLE_WEB_CRYPTO=OFF \
+      -DUSE_LIBHYPHEN=OFF \
+      -DUSE_LIBNOTIFY=OFF \
+      -DUSE_LIBSECRET=OFF \
+      -DENABLE_WEB_AUDIO=OFF \
+      -DUSE_WOFF2=OFF \
+      -DUSE_SYSTEM_MALLOC=ON \
+      -DENABLE_GEOLOCATION=OFF \
+      -DLIBEXEC_INSTALL_DIR=/usr/lib \
+      -DLIB_INSTALL_DIR=/usr/lib \
+      -DPYTHON_EXECUTABLE=${MINGW_PREFIX}/bin/python2 \
+      ../webkitgtk-$pkgver
+
+  ninja
+}
+
+package() {
+  cd "${srcdir}"/build-${CARCH}
+
+  DESTDIR="$pkgdir" ninja -C build install
+}

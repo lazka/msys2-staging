@@ -1,0 +1,27 @@
+diff -Nur webkitgtk-2.20.0-orig/Source/cmake/OptionsGTK.cmake webkitgtk-2.20.0/Source/cmake/OptionsGTK.cmake
+--- webkitgtk-2.20.0-orig/Source/cmake/OptionsGTK.cmake	2018-03-12 10:28:34.000000000 +0100
++++ webkitgtk-2.20.0/Source/cmake/OptionsGTK.cmake	2018-03-20 14:57:29.211594600 +0100
+@@ -7,6 +7,11 @@
+ CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(WEBKIT 65 0 28)
+ CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(JAVASCRIPTCORE 25 8 7)
+ 
++add_definitions(-D_WINDOWS -DWINVER=0x601 -D_WIN32_WINNT=0x601)
++
++add_definitions(-DNOMINMAX)
++add_definitions(-DUNICODE -D_UNICODE)
++
+ # These are shared variables, but we special case their definition so that we can use the
+ # CMAKE_INSTALL_* variables that are populated by the GNUInstallDirs macro.
+ set(LIB_INSTALL_DIR "${CMAKE_INSTALL_FULL_LIBDIR}" CACHE PATH "Absolute path to library installation directory")
+diff -Nur webkitgtk-2.20.0-orig/Source/WTF/wtf/DateMath.cpp webkitgtk-2.20.0/Source/WTF/wtf/DateMath.cpp
+--- webkitgtk-2.20.0-orig/Source/WTF/wtf/DateMath.cpp	2018-02-19 08:45:30.000000000 +0100
++++ webkitgtk-2.20.0/Source/WTF/wtf/DateMath.cpp	2018-03-20 15:16:57.240047900 +0100
+@@ -126,7 +126,7 @@
+ 
+ static inline void getLocalTime(const time_t* localTime, struct tm* localTM)
+ {
+-#if COMPILER(MSVC)
++#if COMPILER(MSVC) || COMPILER(MINGW)
+     localtime_s(localTM, localTime);
+ #elif HAVE(LOCALTIME_R)
+     localtime_r(localTime, localTM);
